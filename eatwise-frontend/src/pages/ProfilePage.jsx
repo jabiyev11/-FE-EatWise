@@ -23,11 +23,10 @@ const activityOptions = [
   "SEDENTARY",
   "LIGHT",
   "MODERATE",
-  "ACTIVE",
-  "VERY_ACTIVE",
+  "ACTIVE"
 ];
 const goalOptions = ["FAT_LOSS", "MAINTENANCE", "MUSCLE_GAIN"];
-const dietOptions = ["OMNIVORE", "VEGETARIAN", "VEGAN", "KETO"];
+const dietOptions = ["OMNIVORE", "VEGETARIAN", "VEGAN"];
 
 const ProfilePage = () => {
   const [profile, setProfile] = useState({
