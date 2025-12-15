@@ -5,12 +5,14 @@ import {
   Card,
   CardContent,
   List,
+  ListItem,
   ListItemButton,
   ListItemText,
   IconButton,
   Alert,
   Stack,
   Button,
+  CircularProgress,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useNavigate } from "react-router-dom";
@@ -25,14 +27,21 @@ const PlanHistoryPage = () => {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
+  const [deletingAll, setDeletingAll] = useState(false);
+
   const navigate = useNavigate();
 
+  /* ============================
+     Load plans
+  ============================ */
   const loadPlans = async () => {
     setLoading(true);
     setError("");
+
     try {
       const res = await getAllPlans();
-      setPlans(res.data || []); // controller returns List<PlanResponse>
+      setPlans(res.data || []);
     } catch (err) {
       console.error(err);
       setError("Failed to load plan history.");
@@ -45,9 +54,19 @@ const PlanHistoryPage = () => {
     loadPlans();
   }, []);
 
+  /* ============================
+     Delete all plans
+  ============================ */
   const handleDeleteAll = async () => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete ALL plans? This action cannot be undone."
+    );
+    if (!confirmed) return;
+
     setError("");
     setMessage("");
+    setDeletingAll(true);
+
     try {
       await deleteAllPlans();
       setPlans([]);
@@ -55,12 +74,24 @@ const PlanHistoryPage = () => {
     } catch (err) {
       console.error(err);
       setError("Failed to delete plans.");
+    } finally {
+      setDeletingAll(false);
     }
   };
 
+  /* ============================
+     Delete single plan
+  ============================ */
   const handleDeleteOne = async (id) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this plan?"
+    );
+    if (!confirmed) return;
+
     setError("");
     setMessage("");
+    setDeletingId(id);
+
     try {
       await deletePlanById(id);
       setPlans((prev) => prev.filter((p) => p.id !== id));
@@ -68,11 +99,20 @@ const PlanHistoryPage = () => {
     } catch (err) {
       console.error(err);
       setError("Failed to delete plan.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
+  /* ============================
+     Loading state
+  ============================ */
   if (loading) {
-    return <Typography>Loading history...</Typography>;
+    return (
+      <Box display="flex" justifyContent="center" mt={4}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
@@ -86,12 +126,14 @@ const PlanHistoryPage = () => {
           {error}
         </Alert>
       )}
+
       {message && (
         <Alert severity="success" sx={{ mb: 2 }}>
           {message}
         </Alert>
       )}
 
+      {/* Summary card */}
       <Card sx={{ mb: 2 }}>
         <CardContent>
           <Stack
@@ -99,22 +141,23 @@ const PlanHistoryPage = () => {
             justifyContent="space-between"
             alignItems="center"
           >
-            <Typography>
-              Total plans: {plans?.length ?? 0}
-            </Typography>
+            <Typography>Total plans: {plans.length}</Typography>
+
             {plans.length > 0 && (
               <Button
                 variant="outlined"
                 color="error"
+                disabled={deletingAll}
                 onClick={handleDeleteAll}
               >
-                Delete All
+                {deletingAll ? "Deleting..." : "Delete All"}
               </Button>
             )}
           </Stack>
         </CardContent>
       </Card>
 
+      {/* List */}
       {plans.length === 0 ? (
         <Typography>No plans yet.</Typography>
       ) : (
@@ -122,31 +165,40 @@ const PlanHistoryPage = () => {
           <CardContent>
             <List>
               {plans.map((plan) => (
-                <ListItemButton
+                <ListItem
                   key={plan.id}
-                  onClick={() => navigate(`/history/${plan.id}`)}
+                  disablePadding
                   secondaryAction={
                     <IconButton
                       edge="end"
                       aria-label="delete"
+                      disabled={deletingId === plan.id}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDeleteOne(plan.id);
                       }}
                     >
-                      <DeleteIcon />
+                      {deletingId === plan.id ? (
+                        <CircularProgress size={20} />
+                      ) : (
+                        <DeleteIcon />
+                      )}
                     </IconButton>
                   }
                 >
-                  <ListItemText
-                    primary={plan.title || `Plan #${plan.id}`}
-                    secondary={
-                      plan.createdAt
-                        ? new Date(plan.createdAt).toLocaleString()
-                        : undefined
-                    }
-                  />
-                </ListItemButton>
+                  <ListItemButton
+                    onClick={() => navigate(`/history/${plan.id}`)}
+                  >
+                    <ListItemText
+                      primary={plan.title || `Plan #${plan.id}`}
+                      secondary={
+                        plan.createdAt
+                          ? new Date(plan.createdAt).toLocaleString()
+                          : undefined
+                      }
+                    />
+                  </ListItemButton>
+                </ListItem>
               ))}
             </List>
           </CardContent>

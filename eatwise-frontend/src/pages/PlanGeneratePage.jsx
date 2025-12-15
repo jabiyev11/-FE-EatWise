@@ -1,92 +1,83 @@
-import React, { useState } from "react";
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  TextField,
-  Typography,
-  Alert,
-} from "@mui/material";
-import { generatePlan } from "../api/planApi.js";
+import { useState } from 'react';
+import { Container, TextField, Button, Typography, Paper, Box } from '@mui/material';
+import { generatePlan } from '../api/planApi';
 
 const PlanGeneratePage = () => {
   const [days, setDays] = useState(7);
-  const [error, setError] = useState("");
+  const [plan, setPlan] = useState('');
+  const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
+  const handleGenerate = async () => {
     setLoading(true);
-    setResult(null);
-
+    setError('');
     try {
-      const res = await generatePlan(Number(days));
-      setResult(res.data);
+      const response = await generatePlan(days);
+      
+      // Extract content and title from the response
+      if (response.data && response.data.success) {
+        setPlan(response.data.content);
+        setTitle(response.data.title);
+      } else {
+        setError('Failed to generate plan');
+      }
     } catch (err) {
-      console.error(err);
-      setError("Failed to generate plan.");
+      console.error('Error generating plan:', err);
+      setError('Error generating plan. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Box>
-      <Typography variant="h5" gutterBottom>
+    <Container maxWidth="md" sx={{ mt: 4 }}>
+      <Typography variant="h4" gutterBottom>
         Generate Diet Plan
       </Typography>
+      
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          label="Days"
+          type="number"
+          value={days}
+          onChange={(e) => setDays(Number(e.target.value))}
+          inputProps={{ min: 1, max: 30 }}
+          sx={{ mr: 2 }}
+        />
+        <Button 
+          variant="contained" 
+          onClick={handleGenerate}
+          disabled={loading}
+        >
+          {loading ? 'Generating...' : 'GENERATE'}
+        </Button>
+      </Box>
 
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-
-          <Box component="form" onSubmit={handleSubmit}>
-            <TextField
-              label="Days (1-30)"
-              type="number"
-              value={days}
-              onChange={(e) => setDays(e.target.value)}
-              inputProps={{ min: 1, max: 30 }}
-              sx={{ mr: 2 }}
-            />
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={loading}
-            >
-              {loading ? "Generating..." : "Generate"}
-            </Button>
-          </Box>
-        </CardContent>
-      </Card>
-
-      {result && (
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Generated Plan (raw response)
-            </Typography>
-            <pre
-              style={{
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                maxHeight: 400,
-                overflow: "auto",
-              }}
-            >
-              {JSON.stringify(result, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
+      {error && (
+        <Typography color="error" sx={{ mb: 2 }}>
+          {error}
+        </Typography>
       )}
-    </Box>
+
+      {plan && (
+        <Paper elevation={3} sx={{ p: 3 }}>
+          <Typography variant="h5" gutterBottom>
+            {title}
+          </Typography>
+          <Typography 
+            component="pre" 
+            sx={{ 
+              whiteSpace: 'pre-wrap',
+              fontFamily: 'inherit',
+              fontSize: '1rem'
+            }}
+          >
+            {plan}
+          </Typography>
+        </Paper>
+      )}
+    </Container>
   );
 };
 
