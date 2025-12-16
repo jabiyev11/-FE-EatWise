@@ -20,6 +20,7 @@ const RegisterPage = () => {
     lastName: "",
   });
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   const { login } = useAuth();
@@ -27,25 +28,39 @@ const RegisterPage = () => {
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    if (fieldErrors[e.target.name]) {
+      setFieldErrors((prev) => ({ ...prev, [e.target.name]: null }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
     setLoading(true);
     try {
       const res = await registerRequest(form);
-      const rest = res.data; // RestResponse<AuthResponse>
+      const rest = res.data;
       if (!rest?.data?.accessToken) {
-        // if backend doesn't auto-login on register,
-        // you can instead redirect to /login here
         throw new Error("No accessToken in response");
       }
       login(rest.data);
       navigate("/");
     } catch (err) {
       console.error(err);
-      setError("Registration failed.");
+      
+      if (err.response && err.response.data) {
+        const data = err.response.data;
+        
+        if (data.errors) {
+          setFieldErrors(data.errors);
+          setError("Please fix the validation errors below.");
+        } else {
+          setError(data.message || "Registration failed.");
+        }
+      } else {
+        setError("Registration failed. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }
@@ -74,6 +89,8 @@ const RegisterPage = () => {
               value={form.firstName}
               onChange={handleChange}
               required
+              error={!!fieldErrors.firstName}
+              helperText={fieldErrors.firstName}
             />
             <TextField
               label="Last Name"
@@ -83,6 +100,8 @@ const RegisterPage = () => {
               value={form.lastName}
               onChange={handleChange}
               required
+              error={!!fieldErrors.lastName}
+              helperText={fieldErrors.lastName}
             />
             <TextField
               label="Email"
@@ -93,6 +112,8 @@ const RegisterPage = () => {
               value={form.email}
               onChange={handleChange}
               required
+              error={!!fieldErrors.email}
+              helperText={fieldErrors.email}
             />
             <TextField
               label="Password"
@@ -103,6 +124,8 @@ const RegisterPage = () => {
               value={form.password}
               onChange={handleChange}
               required
+              error={!!fieldErrors.password}
+              helperText={fieldErrors.password}
             />
 
             <Button

@@ -42,6 +42,7 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [message, setMessage] = useState("");
 
   const loadProfile = async () => {
@@ -92,6 +93,9 @@ const ProfilePage = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setProfile((prev) => ({ ...prev, [name]: value }));
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: null }));
+    }
   };
 
   const handleSave = async (e) => {
@@ -99,6 +103,7 @@ const ProfilePage = () => {
     setSaving(true);
     setError("");
     setMessage("");
+    setFieldErrors({});
 
     const payload = {
       age: Number(profile.age),
@@ -119,7 +124,18 @@ const ProfilePage = () => {
       setHasProfile(true);
     } catch (err) {
       console.error(err);
-      setError("Failed to save profile.");
+      
+      if (err.response && err.response.data) {
+        const data = err.response.data;
+        if (data.errors) {
+          setFieldErrors(data.errors);
+          setError("Please correct the invalid fields below.");
+        } else {
+          setError(data.message || "Failed to save profile.");
+        }
+      } else {
+        setError("Failed to save profile. Network error.");
+      }
     } finally {
       setSaving(false);
     }
@@ -179,6 +195,8 @@ const ProfilePage = () => {
                 value={profile.age}
                 onChange={handleChange}
                 required
+                error={!!fieldErrors.age}
+                helperText={fieldErrors.age}
               />
               <TextField
                 label="Weight (kg)"
@@ -187,6 +205,8 @@ const ProfilePage = () => {
                 value={profile.weight}
                 onChange={handleChange}
                 required
+                error={!!fieldErrors.weight}
+                helperText={fieldErrors.weight}
               />
               <TextField
                 label="Height (cm)"
@@ -195,6 +215,8 @@ const ProfilePage = () => {
                 value={profile.height}
                 onChange={handleChange}
                 required
+                error={!!fieldErrors.height}
+                helperText={fieldErrors.height}
               />
 
               <TextField
@@ -204,6 +226,8 @@ const ProfilePage = () => {
                 value={profile.gender}
                 onChange={handleChange}
                 required
+                error={!!fieldErrors.gender}
+                helperText={fieldErrors.gender}
               >
                 {genderOptions.map((g) => (
                   <MenuItem key={g} value={g}>
@@ -219,6 +243,8 @@ const ProfilePage = () => {
                 value={profile.activityLevel}
                 onChange={handleChange}
                 required
+                error={!!fieldErrors.activityLevel}
+                helperText={fieldErrors.activityLevel}
               >
                 {activityOptions.map((a) => (
                   <MenuItem key={a} value={a}>
@@ -234,6 +260,8 @@ const ProfilePage = () => {
                 value={profile.goal}
                 onChange={handleChange}
                 required
+                error={!!fieldErrors.goal}
+                helperText={fieldErrors.goal}
               >
                 {goalOptions.map((g) => (
                   <MenuItem key={g} value={g}>
@@ -249,6 +277,8 @@ const ProfilePage = () => {
                 value={profile.dietaryPreference}
                 onChange={handleChange}
                 required
+                error={!!fieldErrors.dietaryPreference}
+                helperText={fieldErrors.dietaryPreference}
               >
                 {dietOptions.map((d) => (
                   <MenuItem key={d} value={d}>
